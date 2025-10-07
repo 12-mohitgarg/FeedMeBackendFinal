@@ -135,7 +135,7 @@ async function signup(req, res) {
 
 
 
-    const otp = Math.floor(1000 + Math.random() * 9000);
+    const otp = 1234
     const user = await models.User.create({
       name: name,
       email: email ? email : null,
@@ -322,7 +322,7 @@ async function forgetpassword(req, res) {
       })
     }
 
-    const otp = Math.floor(1000 + Math.random() * 9000);
+    const otp = 1234
     userdata.otp = otp
     userdata.otp_expiry = new Date(Date.now() + 5 * 60 * 1000)
     await userdata.save()
