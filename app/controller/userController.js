@@ -126,7 +126,7 @@ async function signup(req, res) {
       })
     }
    
-    if (!userdata) {
+    if (userdata) {
       return res.status(401).json({
         success: false,
         message: "User Already exists"
