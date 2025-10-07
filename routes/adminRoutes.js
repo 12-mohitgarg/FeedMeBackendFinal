@@ -49,7 +49,7 @@ router.post(
   "/restaurat/add",upload.fields([{ name: "file", maxCount: 1 }]),
   restaurantController.addrestaurant
 );
-router.get(
+router.post(
   "/restaurat/get",
   restaurantController.getrestaurent
 );
@@ -57,7 +57,7 @@ router.post(
   "/user/add-action",auth.checkAuth,
   restaurantController.addinteractionhistory
 );
-router.get(
+router.post(
   "/user/get-action",auth.checkAuth,
   restaurantController.getinteractionhistory
 );
