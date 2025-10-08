@@ -252,12 +252,8 @@ async function signuppassword(req, res) {
       });
     }
 
-    if (!userdata.is_verified) {
-      return res.status(403).json({
-        success: false,
-        message: "Please verify OTP first"
-      });
-    }
+
+    
 
     const hashpass = await bcrypt.hash(password, 10);
     userdata.password = hashpass;
