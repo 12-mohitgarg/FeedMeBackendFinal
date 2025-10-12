@@ -61,7 +61,7 @@ router.post(
   "/user/get-action",auth.checkAuth,
   restaurantController.getinteractionhistory
 );
-router.delete(
+router.post(
   "/user/delete-action",
   restaurantController.deleteinteractionhistory
 );
