@@ -267,6 +267,26 @@ console.log('====================================');
 
     }
 
+    const datahh = await  models.Interactionhistory.findOne({
+       where:{
+         user_id,
+        restaurant_id,
+       } 
+        
+    })
+
+
+    if(datahh){
+      datahh.action = status;
+      await datahh.save();
+      
+return res.status(200).json({
+        success:true,
+        message:'action add Successfully',
+      
+    })
+      
+    }
     await  models.Interactionhistory.create({
         user_id,
         restaurant_id,
