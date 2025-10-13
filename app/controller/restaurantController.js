@@ -8,8 +8,8 @@ require("dotenv").config();
 const bcrypt = require('bcryptjs');
 const sendOtpOnMobile = require("../../utils/sendSms");
 const sendEmail = require("../../utils/sendMail");
-
-
+const sendNotification = require("../../utils/sendNotification");
+const { Op, Sequelize } = require('sequelize');
 const haversineDistance = (lat1, lon1, lat2, lon2) => {
   const toRad = (value) => (value * Math.PI) / 180;
   const R = 6371;
@@ -405,10 +405,131 @@ async function deleteinteractionhistory(req, res) {
     });
   }
 }
+
+async function sendNotificatio(req, res) {
+  try {
+ 
+      
+      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+ 
+
+ const interactions = await models.Interactionhistory.findAll({
+      where: { action: 1, is_notify: 0 },
+      attributes: [
+        'id',
+        'restaurant_id',
+        'user_id',
+        [Sequelize.fn('MAX', Sequelize.col('created_at')), 'last_action']
+      ],
+      group: ['restaurant_id', 'user_id', 'id']
+    });
+
+
+
+
+
+    for (const interaction of interactions) {
+      const alreadyNotified = await models.Interactionhistory.findOne({
+        where: {
+          restaurant_id: interaction.restaurant_id,
+          user_id: interaction.user_id,
+          action: 1,
+          is_notify: 1,
+          created_at: { [Op.gte]: fourHoursAgo }
+        }
+      });
+
+      if (alreadyNotified) continue;
+
+    
+      const tokens = ['user_device_token_here']; 
+      const title = 'New Restaurant Action';
+      const body = `You have a new action at restaurant ${interaction.restaurant_id}`;
+      const data = {};
+
+     
+      await sendNotification(tokens, title, body, data);
+
+      await models.Interactionhistory.update(
+        { is_notify: 1 },
+        { where: { id: interaction.id } }
+      );
+
+ await models.Usernotification.create({
+        user_id: interaction.user_id,
+        restaurant_id: interaction.restaurant_id,
+        title,
+        body,
+        is_seen: 0
+      });
+
+
+    }
+
+
+    return res.status(200).json({
+        success:true,
+        message:'Notification send',
+   
+    })
+
+  } catch (error) {
+    return res.status(StatusCode.HTTP_INTERNAL_SERVER_ERROR).json({
+      status: Status.STATUS_FALSE,
+      message: error.message,
+      data: [],
+    });
+  }
+}
+
+async function getnotification(req, res) {
+  try {
+ 
+      
+  const user_id = req.apiAuth.user_id
+      
+
+ 
+
+
+
+   const data = await models.Usernotification.findAll({
+      where:{
+        user_id
+      },
+       include:[
+              {
+                   model: models.Restaurant, 
+                  
+              }
+            ],
+            order: [["created_at", "DESC"]],
+      });
+
+
+    return res.status(200).json({
+        success:true,
+        message:'Notification Data Successfully',
+        data:data
+   
+    })
+
+  } catch (error) {
+    return res.status(StatusCode.HTTP_INTERNAL_SERVER_ERROR).json({
+      status: Status.STATUS_FALSE,
+      message: error.message,
+      data: [],
+    });
+  }
+}
+
+
 module.exports = {
 addrestaurant:addrestaurant,
 getrestaurent:getrestaurent,
 addinteractionhistory:addinteractionhistory,
 getinteractionhistory:getinteractionhistory,
-deleteinteractionhistory:deleteinteractionhistory
+deleteinteractionhistory:deleteinteractionhistory,
+sendNotificatio:sendNotificatio,
+getnotification:getnotification
 };

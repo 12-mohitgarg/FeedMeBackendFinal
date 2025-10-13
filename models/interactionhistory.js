@@ -18,7 +18,7 @@ Interactionhistory.belongsTo(models.Restaurant, { foreignKey: 'restaurant_id' })
       user_id:DataTypes.INTEGER,
       restaurant_id :DataTypes.INTEGER,
       action :DataTypes.INTEGER,
-
+      is_notify:DataTypes.INTEGER
     },
     {
       sequelize,

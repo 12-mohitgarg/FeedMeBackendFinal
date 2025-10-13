@@ -11,6 +11,7 @@ const sendEmail = require("../../utils/sendMail");
 const { EATER_QUESTIONS } = require("../constant/cattleQuestion");
 
 const sendNotification = require("../../utils/sendNotification");
+const { where } = require("sequelize");
 
 
 async function login(req, res) {
@@ -685,6 +686,116 @@ async function getaddress(req, res) {
   }
 }
 
+
+async function addlist(req, res) {
+  try {
+    const user_id = req.apiAuth?.user_id;
+    const { restaurant_id, like_status, fav_status, regular_status } = req.body;
+
+    // If none of the status fields are provided, return error
+    if (like_status === undefined && fav_status === undefined && regular_status === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one status (like_status, fav_status, or regular_status) must be provided",
+      });
+    }
+
+    const existing = await models.Userlikes.findOne({
+      where: { user_id, restaurant_id },
+    });
+
+    if (existing) {
+      // Update only provided fields
+      const like = like_status !== undefined ? Number(like_status) : existing.like_status;
+      const fav = fav_status !== undefined ? Number(fav_status) : existing.fav_status;
+      const regular = regular_status !== undefined ? Number(regular_status) : existing.regular_status;
+
+      // Apply like_status === 2 rule
+      existing.like_status = like;
+      if (like === 2) {
+        existing.fav_status = 0;
+        existing.regular_status = 0;
+      } else {
+        existing.fav_status = fav;
+        existing.regular_status = regular;
+      }
+
+      await existing.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "List updated successfully",
+        data: existing,
+      });
+    }
+
+    // If no existing record, create new with defaults
+    const newRecord = await models.Userlikes.create({
+      user_id,
+      restaurant_id,
+      like_status: like_status !== undefined ? Number(like_status) : 0,
+      fav_status: fav_status !== undefined ? Number(fav_status) : 0,
+      regular_status: regular_status !== undefined ? Number(regular_status) : 0,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "List added successfully",
+      data: newRecord,
+    });
+  } catch (error) {
+    console.error("Error in addlist:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+}
+async function getlist(req, res) {
+  try {
+    const user_id = req.apiAuth?.user_id;
+    const {  like_status, fav_status, regular_status } = req.body;
+
+  let where = {user_id}
+
+  if(like_status){
+    where.like_status = like_status
+  }
+  if(fav_status){
+    where.fav_status = fav_status
+  }
+
+  if(regular_status){
+    where.regular_status = regular_status
+  }
+   
+  const data = await models.Userlikes.findAll({
+    where,
+     include:[
+        {
+             model: models.Restaurant, 
+            
+        }
+      ],
+      order: [["created_at", "DESC"]],
+  })
+
+    
+
+    return res.status(201).json({
+      success: true,
+      message: "List get successfully",
+      data: data,
+    });
+  } catch (error) {
+    console.error("Error in addlist:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+}
+
 module.exports = {
   login: login,
   signup: signup,
@@ -697,5 +808,7 @@ module.exports = {
   questions: questions,
   useranswer:useranswer,
   addaddress:addaddress,
-  getaddress:getaddress
+  getaddress:getaddress,
+  addlist:addlist,
+  getlist:getlist
 };

@@ -81,8 +81,24 @@ router.get(
   "/user/get-address",auth.checkAuth,
   userController.getaddress
 );
+router.post(
+  "/user/add-list-status",auth.checkAuth,
+  userController.addlist
+);
+
+router.post(
+  "/user/get-list",auth.checkAuth,
+  userController.getlist
+);
 
 
-
+router.post(
+  "/user/send-notification",
+  restaurantController.sendNotificatio
+);
+router.get(
+  "/user/get-notification",auth.checkAuth,
+  restaurantController.getnotification
+);
 
 module.exports = router;
