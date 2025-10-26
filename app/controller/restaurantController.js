@@ -27,6 +27,25 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 
+
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  const R = 6371; 
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function toRad(value) {
+  return (value * Math.PI) / 180;
+}
+
 async function addrestaurant(req, res) {
   try {
  
@@ -119,12 +138,21 @@ console.log('====================================');
 }
 
 
+
 async function getrestaurent(req, res) {
   try {
- 
-    
-      const { latitude, longitude, radius = 1200, keyword = "restaurant" } = req.body;
+    const {
+      latitude,
+      longitude,
+      radius = 1200, // meters
+      keyword = "restaurant",
+      maxDistance = 3, // kilometers
+      minRating = 3.5, // minimum Google rating
+      maxPrice = 4, // 0 = Free, 4 = Very Expensive
+      cuisine = "Indian", // default cuisine type
+    } = req.body;
 
+    // Validate input
     if (!latitude || !longitude) {
       return res.status(400).json({
         success: false,
@@ -132,69 +160,96 @@ async function getrestaurent(req, res) {
       });
     }
 
-    // Call Google Places API
-    const apiKey = process.env.GOOGLE_API_KEY; // store in .env
+    // Google Places API
+    const apiKey = process.env.GOOGLE_API_KEY;
     const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&keyword=${keyword}&key=${apiKey}`;
 
     const response = await axios.get(url);
     const places = response.data.results || [];
 
-console.log(response.data);
+    if (!places.length) {
+      return res.status(200).json({
+        success: true,
+        message: "No restaurants found nearby",
+        data: [],
+      });
+    }
 
     const nearbyRestaurants = [];
+
     for (let place of places) {
-      const [restaurant, created] = await models.Restaurant.findOrCreate({
-        where: { google_place_id: place.place_id },
-        defaults: {
-          google_place_id: place.place_id,
-          name: place.name,
-          address: place.vicinity || place.formatted_address || "",
-          latitude: place.geometry?.location?.lat,
-          longitude: place.geometry?.location?.lng,
-          price_level: place.price_level || null,
-          total_reviews: place.user_ratings_total || 0,
-          google_rating: place.rating || 0,
-          cuisine: keyword,
-          image_url: place.photos
-            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}`
-            : null,
-          times_recommended: 0,
-          times_upvoted: 0,
-          times_regular_box_checked: 0,
-          times_downvoted: 0,
-          total_times_reviewed_in_app: 0,
-        },
-      });
+      
+      const distKm = getDistanceFromLatLonInKm(
+        latitude,
+        longitude,
+        place.geometry?.location?.lat,
+        place.geometry?.location?.lng
+      );
 
-console.log(restaurant,created);
-
-      if (!created) {
-        await restaurant.update({
-          total_reviews: place.user_ratings_total || restaurant.total_reviews,
-          google_rating: place.rating || restaurant.google_rating,
+      // Apply filters
+      if (
+        distKm <= maxDistance &&
+        (place.rating || 0) >= minRating &&
+        (place.price_level || 0) <= maxPrice
+      ) {
+        const [restaurant, created] = await models.Restaurant.findOrCreate({
+          where: { google_place_id: place.place_id },
+          defaults: {
+            google_place_id: place.place_id,
+            name: place.name,
+            address: place.vicinity || place.formatted_address || "",
+            latitude: place.geometry?.location?.lat,
+            longitude: place.geometry?.location?.lng,
+            price_level: place.price_level || null,
+            total_reviews: place.user_ratings_total || 0,
+            google_rating: place.rating || 0,
+            cuisine,
+            image_url: place.photos
+              ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${apiKey}`
+              : null,
+            times_recommended: 0,
+            times_upvoted: 0,
+            times_regular_box_checked: 0,
+            times_downvoted: 0,
+            total_times_reviewed_in_app: 0,
+          },
         });
-      }
 
-      nearbyRestaurants.push(restaurant);
+        if (!created) {
+          await restaurant.update({
+            total_reviews:
+              place.user_ratings_total || restaurant.total_reviews,
+            google_rating: place.rating || restaurant.google_rating,
+          });
+        }
+
+        
+        restaurant.dataValues.distance_km = distKm.toFixed(2);
+
+        nearbyRestaurants.push(restaurant);
+      }
     }
 
     return res.status(200).json({
       success: true,
       message: "Restaurants fetched successfully",
+      filters: { maxDistance, minRating, maxPrice, cuisine },
+      count: nearbyRestaurants.length,
       data: nearbyRestaurants,
     });
-    
-    
-   
-
   } catch (error) {
-    return res.status(StatusCode.HTTP_INTERNAL_SERVER_ERROR).json({
-      status: Status.STATUS_FALSE,
-      message: error.message,
+    console.error("Error fetching restaurants:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal Server Error",
       data: [],
     });
   }
 }
+
+
+
+
 
 
 
