@@ -101,4 +101,21 @@ router.get(
   restaurantController.getnotification
 );
 
+router.post(
+  "/user/add-review",auth.checkAuth,
+  restaurantController.addlike
+);
+
+
+router.get(
+  "/user/dashboard-notification",auth.checkAuth,
+  restaurantController.likedashboard
+);
+
+router.get(
+  "/user/review",auth.checkAuth,
+  restaurantController.reviewhistory
+);
+
+
 module.exports = router;

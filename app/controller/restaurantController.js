@@ -9,7 +9,8 @@ const bcrypt = require('bcryptjs');
 const sendOtpOnMobile = require("../../utils/sendSms");
 const sendEmail = require("../../utils/sendMail");
 const sendNotification = require("../../utils/sendNotification");
-const { Op, Sequelize } = require('sequelize');
+const { Op, Sequelize, where } = require('sequelize');
+
 const haversineDistance = (lat1, lon1, lat2, lon2) => {
   const toRad = (value) => (value * Math.PI) / 180;
   const R = 6371;
@@ -51,9 +52,7 @@ async function addrestaurant(req, res) {
  
 const {id , google_place_id, name,address,latitude,longitude,price_level,total_reviews,google_rating,cuisine,times_recommended,times_upvoted,times_regular_box_checked,times_downvoted,total_times_reviewed_in_app} = req.body
     const file = req.files?.file?.[0];
-    console.log('====================================');
-    console.log(file);
-    console.log('====================================');
+ 
 
 if(id){
     const rest = await models.Restaurant.findOne({
@@ -94,9 +93,7 @@ if(id){
         data:rest
     })
 }
-console.log('====================================');
-console.log("ddd");
-console.log('====================================');
+
 
 const resto = await models.Restaurant.create({
      google_place_id,
@@ -115,9 +112,7 @@ const resto = await models.Restaurant.create({
       total_times_reviewed_in_app,
       image_url:file.path ? file.path : null
 })
-console.log('====================================');
-console.log(resto);
-console.log('====================================');
+
    
  return res.status(200).json({
         success:true,
@@ -480,6 +475,7 @@ async function sendNotificatio(req, res) {
     });
 
 
+// console.log('interactions', interactions);
 
 
 
@@ -496,14 +492,24 @@ async function sendNotificatio(req, res) {
 
       if (alreadyNotified) continue;
 
-    
-      const tokens = ['user_device_token_here']; 
+console.log('interaction', interaction);
+
+
+      const user = await models.User.findOne({
+        where:{id:interaction.user_id}
+      })
+      console.log('user', user);
+      
+
+     if (!user || !user.fcm_token) continue;
+      const tokens = [user.fcm_token]; 
       const title = 'New Restaurant Action';
       const body = `You have a new action at restaurant ${interaction.restaurant_id}`;
-      const data = {};
+      const data = {interaction};
 
      
-      await sendNotification(tokens, title, body, data);
+     const svy =  await sendNotification(tokens, title, body, data);
+console.log('svy', svy);
 
       await models.Interactionhistory.update(
         { is_notify: 1 },
@@ -516,7 +522,7 @@ async function sendNotificatio(req, res) {
         title,
         body,
         is_seen: 0
-      });
+      }); 
 
 
     }
@@ -579,6 +585,134 @@ async function getnotification(req, res) {
 }
 
 
+async function addlike(req, res) {
+  try {
+ 
+      
+  const user_id = req.apiAuth.user_id
+      const {id,is_liked} = req.body
+
+      if(!id || !is_liked){
+        return res.status(400).json({
+            success:false,
+            message:"please fill all the details"
+        })
+      }
+      const data = await models.Interactionhistory.findOne({
+        where:{
+          id,is_notify:1,user_id
+        }
+      })
+
+      if(!data){
+        return res.status(404).json({
+          success:false,
+          message:'data not found'
+        })
+      }
+
+
+
+ data.is_liked = is_liked
+ await data.save()
+
+
+
+  
+
+
+    return res.status(200).json({
+        success:true,
+        message:'like  Data  added Successfully',
+        
+   
+    })
+
+  } catch (error) {
+    return res.status(StatusCode.HTTP_INTERNAL_SERVER_ERROR).json({
+      status: Status.STATUS_FALSE,
+      message: error.message,
+      data: [],
+    });
+  }
+}
+
+
+async function likedashboard(req, res) {
+  try {
+ 
+      
+  const user_id = req.apiAuth.user_id
+      
+
+    const data = await models.Interactionhistory.findOne({
+  where: {
+    is_notify: 1,
+    user_id: user_id,          
+    is_liked: { [Op.eq]: null }
+  }
+});
+
+
+
+
+    return res.status(200).json({
+        success:true,
+        message:'like  Data  get Successfully',
+        data:data
+   
+    })
+
+  } catch (error) {
+    return res.status(StatusCode.HTTP_INTERNAL_SERVER_ERROR).json({
+      status: Status.STATUS_FALSE,
+      message: error.message,
+      data: [],
+    });
+  }
+}
+
+async function reviewhistory(req, res) {
+  try {
+ 
+      
+  const user_id = req.apiAuth.user_id
+      
+
+    const data = await models.Interactionhistory.findAll({
+  where: {
+  
+    user_id: user_id,          
+    is_liked: { [Op.ne]: null }
+  },
+  include:[
+    {
+         model: models.Restaurant, 
+        
+    }
+  ],
+  order: [["created_at", "DESC"]],
+  
+});
+
+
+
+
+    return res.status(200).json({
+        success:true,
+        message:'review data get Successfully',
+        data:data
+   
+    })
+
+  } catch (error) {
+    return res.status(StatusCode.HTTP_INTERNAL_SERVER_ERROR).json({
+      status: Status.STATUS_FALSE,
+      message: error.message,
+      data: [],
+    });
+  }
+}
 module.exports = {
 addrestaurant:addrestaurant,
 getrestaurent:getrestaurent,
@@ -586,5 +720,8 @@ addinteractionhistory:addinteractionhistory,
 getinteractionhistory:getinteractionhistory,
 deleteinteractionhistory:deleteinteractionhistory,
 sendNotificatio:sendNotificatio,
-getnotification:getnotification
+    getnotification:getnotification,
+    addlike:addlike,
+    likedashboard:likedashboard,
+    reviewhistory:reviewhistory
 };
