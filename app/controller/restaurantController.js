@@ -225,6 +225,8 @@ async function getrestaurent(req, res) {
       }
     }
 
+    nearbyRestaurants.sort(() => Math.random() - 0.5);
+
     return res.status(200).json({
       success: true,
       message: "Restaurants fetched successfully",
