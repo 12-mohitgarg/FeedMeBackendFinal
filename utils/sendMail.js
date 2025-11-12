@@ -5,17 +5,17 @@ const path = require('path');
 const sendEmail = async (to, subject, html, attachmentPath = null) => {
   try {
     const transporter = nodemailer.createTransport({
-      host: "smtp.zeptomail.in",
+      host: "smtp.gmail.com",
       port: 587,
       secure: false,
       auth: {
-        user: "emailapikey",
-        pass: "PHtE6r1eEOnqgmR5oUNV5/6xE8OjMt8o/+8yKQBPsd5LXqAHHk0E/tkqwGTiqxp8VfZEQqaYmt9qtO+asLjRIW3sYT5MXWqyqK3sx/VYSPOZsbq6x00ZsVQfckfdVobrctZt0C3Sut/cNA=="
+        user: "gargmohit8302@gmail.com",
+        pass: "pamm czos jovj ufgj"
       }
     });
 
     const mailOptions = {
-      from: '"ZERY Team" <noreply@zery.in>',
+      from: '"Feed ME Team" <gargmohit8302@gmail.com>',
       to,
       subject,
       html,

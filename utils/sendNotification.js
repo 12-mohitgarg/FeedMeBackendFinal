@@ -7,7 +7,7 @@ let customerApp;
 const initFirebaseApp = () => {
   if (!customerApp) {
     // const serviceAccountCustomer = require(path.join(__dirname, "../zery-customer-firebase.json"));
-    const serviceAccountCustomer = require(path.join(__dirname, "../my-firebase-project-473406-firebase-adminsdk-fbsvc-c4c54b0dea"));
+    const serviceAccountCustomer = require(path.join(__dirname, "../my-firebase-project-473406-firebase-adminsdk-fbsvc-0dbc105cf7.json"));
     customerApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccountCustomer),
     }, 'customerApp');
