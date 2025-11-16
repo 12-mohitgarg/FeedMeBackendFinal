@@ -133,9 +133,9 @@ async function addrestaurant(req, res) {
 }
 
 
-
 async function getrestaurent(req, res) {
   try {
+    const user_id = req.apiAuth?.user_id;
     const {
       latitude,
       longitude,
@@ -152,6 +152,22 @@ async function getrestaurent(req, res) {
       return res.status(400).json({
         success: false,
         message: "Latitude and Longitude are required",
+      });
+    }
+
+    // Get restaurants marked as "never" (status 3) by the user
+    const neverRestaurants = new Set();
+    if (user_id) {
+      const neverInteractions = await models.Interactionhistory.findAll({
+        where: {
+          user_id,
+          action: 3, // Status 3 = Never
+        },
+        attributes: ['restaurant_id'],
+        raw: true,
+      });
+      neverInteractions.forEach(interaction => {
+        neverRestaurants.add(interaction.restaurant_id);
       });
     }
 
@@ -218,6 +234,10 @@ async function getrestaurent(req, res) {
           });
         }
 
+        // Skip restaurants marked as "never" by the user
+        if (neverRestaurants.has(restaurant.id)) {
+          continue;
+        }
 
         restaurant.dataValues.distance_km = distKm.toFixed(2);
 
@@ -339,6 +359,37 @@ async function addinteractionhistory(req, res) {
       })
 
     }
+
+    // Check if status is 2 (Queue) and if user already has 10 queue entries
+    if (status == 2) {
+      const queueCount = await models.Interactionhistory.count({
+        where: {
+          user_id,
+          action: 2 // Status 2 = Queue
+        }
+      });
+
+      // If user has 10 or more queue entries, delete the oldest one
+      if (queueCount >= 10) {
+        const oldestQueueEntry = await models.Interactionhistory.findOne({
+          where: {
+            user_id,
+            action: 2
+          },
+          order: [['created_at', 'ASC']], // Get oldest entry
+          raw: true
+        });
+
+        if (oldestQueueEntry) {
+          await models.Interactionhistory.destroy({
+            where: {
+              id: oldestQueueEntry.id
+            }
+          });
+        }
+      }
+    }
+
     await models.Interactionhistory.create({
       user_id,
       restaurant_id,
@@ -487,7 +538,7 @@ async function sendNotificatio(req, res) {
     }
 
     console.log("interactions to notify:", interactions);
-    
+
     for (const interaction of interactions) {
       // Check if user was already notified about this restaurant in the last 4 hours
       const alreadyNotified = await models.Interactionhistory.findOne({
@@ -499,7 +550,7 @@ async function sendNotificatio(req, res) {
           created_at: { [Op.gte]: fourHoursAgo }
         }
       });
-console.log("alreadyNotified:", alreadyNotified);
+      console.log("alreadyNotified:", alreadyNotified);
 
       if (alreadyNotified) continue;
 

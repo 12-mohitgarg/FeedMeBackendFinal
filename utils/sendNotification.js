@@ -4,17 +4,17 @@ const path = require('path');
 let customerApp;
 
 // Initialize only Customer Firebase App
-const initFirebaseApp = () => {
-  if (!customerApp) {
-    // const serviceAccountCustomer = require(path.join(__dirname, "../zery-customer-firebase.json"));
-    const serviceAccountCustomer = require(path.join(__dirname, "../my-firebase-project-473406-firebase-adminsdk-fbsvc-0dbc105cf7.json"));
-    customerApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccountCustomer),
-    }, 'customerApp');
-  }
-};
+// const initFirebaseApp = () => {
+//   if (!customerApp) {
+//     // const serviceAccountCustomer = require(path.join(__dirname, "../zery-customer-firebase.json"));
+//     const serviceAccountCustomer = require(path.join(__dirname, "../my-firebase-project-473406-firebase-adminsdk-fbsvc-0dbc105cf7.json"));
+//     customerApp = admin.initializeApp({
+//       credential: admin.credential.cert(serviceAccountCustomer),
+//     }, 'customerApp');
+//   }
+// };
 
-initFirebaseApp();
+// initFirebaseApp();
 
 /**
  * Send push notification via Firebase Admin SDK (FCM) to customer app
