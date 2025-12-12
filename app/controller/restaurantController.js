@@ -200,7 +200,7 @@ async function getrestaurent(req, res) {
       // Apply filters
       if (
         distKm <= maxDistance &&
-        (place.rating || 0) >= minRating &&
+        (place.rating || 0) <=   minRating &&
         (place.price_level || 0) <= maxPrice
       ) {
         const [restaurant, created] = await models.Restaurant.findOrCreate({
