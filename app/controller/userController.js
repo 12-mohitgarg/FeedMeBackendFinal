@@ -439,7 +439,7 @@ async function addprofileimage(req, res) {
 
     const id = req.apiAuth.user_id
 
-    const file = req.files?.file?.[0];
+    const file = req.body.file
 
     if (!file) {
       return res.status(StatusCode.HTTP_BAD_REQUEST).json({
@@ -463,7 +463,7 @@ async function addprofileimage(req, res) {
     }
 
 
-    userdata.image = file.path
+    userdata.image = file
     await userdata.save()
 
 

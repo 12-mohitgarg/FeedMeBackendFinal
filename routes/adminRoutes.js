@@ -38,7 +38,7 @@ router.post(
   userController.verifyforgetpassOtp
 );
 router.post(
-  "/user/add-image" , upload.fields([{ name: "file", maxCount: 1 }]), auth.checkAuth,
+  "/user/add-image" , auth.checkAuth,
   userController.addprofileimage
 );
 router.get(
