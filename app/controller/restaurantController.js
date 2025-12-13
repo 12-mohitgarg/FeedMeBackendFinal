@@ -417,12 +417,12 @@ async function getinteractionhistory(req, res) {
 
     const user_id = req.apiAuth.user_id
     const { status } = req.body
+    
+    let where = {
+      user_id}
 
-    if (!status) {
-      return res.status(400).json({
-        success: false,
-        message: "please fill all the details"
-      })
+    if (status) {
+      where.action = status
     }
 
     const user = await models.User.findOne({
@@ -443,10 +443,7 @@ async function getinteractionhistory(req, res) {
 
 
     const data = await models.Interactionhistory.findAll({
-      where: {
-        user_id,
-        action: status,
-      },
+      where,
       include: [
         {
           model: models.Restaurant,
