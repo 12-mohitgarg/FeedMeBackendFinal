@@ -10,18 +10,27 @@ const env = process.env.NODE_ENV || 'development';
 const config = require(__dirname + '/../config/config.js')[env];
 const db = {};
 
-let sequelize;
-if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], {
-    ...config,
-    dialectModule: mysql2,   // 👉 force sequelize to use mysql2
-  });
-} else {
-  sequelize = new Sequelize(config.database, config.username, config.password, {
-    ...config,
-    dialectModule: mysql2,   // 👉 force sequelize to use mysql2
-  });
-}
+console.log(process.env.DB_DEV_DATABASE); // Debug: Check if password is loaded
+
+const sequelize = new Sequelize(
+  process.env.DB_DEV_DATABASE,
+  process.env.DB_DEV_USERNAME,
+  process.env.DB_DEV_PASSWORD,
+  {
+    host: process.env.DB_DEV_HOST,
+    dialect: process.env.DB_DEV_DIALECT,
+    port: 3307,
+    timezone: process.env.DB_DEV_TIMEZONE,
+    logging: false,
+    dialectModule: mysql2,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    }
+  }
+);
 
 // Load all model files dynamically
 fs.readdirSync(__dirname)
@@ -52,6 +61,6 @@ db.Sequelize = Sequelize;
 sequelize
   .sync()
   .then(() => console.log("✅ All models synchronized successfully!"))
-  .catch(err => console.error("❌ Error syncing models:", err));
+  .catch(err => console.error("❌ Error syncing models:", err.message));
 
 module.exports = db;
