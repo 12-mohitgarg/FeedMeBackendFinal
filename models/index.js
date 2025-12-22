@@ -18,11 +18,19 @@ const sequelize = new Sequelize(
   process.env.DB_DEV_PASSWORD,
   {
     host: process.env.DB_DEV_HOST,
-    dialect: process.env.DB_DEV_DIALECT,
+    dialect: "mysql",
     port: 3307,
-    timezone: process.env.DB_DEV_TIMEZONE,
     logging: false,
     dialectModule: mysql2,
+    timezone: process.env.DB_DEV_TIMEZONE,
+
+    pool: {
+      max: 1,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    },
+
     dialectOptions: {
       ssl: {
         require: true,
@@ -31,6 +39,7 @@ const sequelize = new Sequelize(
     }
   }
 );
+
 
 // Load all model files dynamically
 fs.readdirSync(__dirname)
