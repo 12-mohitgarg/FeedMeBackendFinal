@@ -9,13 +9,13 @@ const sendEmail = async (to, subject, html, attachmentPath = null) => {
       port: 587,
       secure: false,
       auth: {
-        user: "gargmohit8302@gmail.com",
-        pass: "pamm czos jovj ufgj"
+        user: "feedmeappdeveloper@gmail.com",
+        pass: "mzhp otpb ajhj zyxl"
       }
     });
 
     const mailOptions = {
-      from: '"Feed ME Team" <gargmohit8302@gmail.com>',
+      from: '"Feed ME Team" <feedmeappdeveloper@gmail.com>',
       to,
       subject,
       html,
